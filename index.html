@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dashboard — Evaluacion de Imputacion IoT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ══ PANTALLA DE CARGA JSON ══════════════════════════════════════ -->
+<div id="upload-screen">
+  <div class="up-card">
+    <div class="up-title">Dashboard — Evaluacion de Imputacion IoT</div>
+    <div class="up-sub">
+      Cargue el archivo <strong>dashboard_data.json</strong> generado por el
+      notebook de Google Colab para visualizar el analisis tecnico y estadistico.
+    </div>
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <p><strong>Haga clic para seleccionar</strong> o arrastre el archivo dashboard_data.json aqui</p>
+    </div>
+    <input type="file" id="file-input" accept=".json">
+    <div class="file-ok" id="file-ok">Archivo cargado correctamente. Procesando...</div>
+    <div class="up-steps" style="margin-top:20px">
+      <strong>Instrucciones de uso:</strong><br>
+      1. Ejecute las celdas 1&#8211;15 del notebook en Google Colab.<br>
+      2. Genere y descargue el archivo JSON desde Google Drive.<br>
+      3. Cargue el JSON aqui para iniciar la evaluacion automatizada.
+    </div>
+  </div>
+</div>
+
+<!-- ══ APLICACION PRINCIPAL ════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- Header -->
+  <header>
+    <div class="htitle" id="h-title">Evaluacion de Tecnicas de Imputacion IoT</div>
+    <div class="hsub"   id="h-sub">—</div>
+    <div class="hright">
+      <button class="btn-sm" onclick="location.reload()">&#8617; Cargar otro JSON</button>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- ── Sidebar ──────────────────────────────────────────────── -->
+    <div class="sidebar">
+      <div class="sb-section">Analisis</div>
+      <div class="sb-item active" onclick="nav('overview')"    id="nav-overview">&#x1F4CA; Vision General</div>
+      <div class="sb-item"        onclick="nav('variables')"   id="nav-variables">&#x1F4E1; Variables Detalle</div>
+      <div class="sb-section">Por Gap</div>
+      <div id="sb-gaps"></div>
+      <div class="sb-section">Evaluacion</div>
+      <div class="sb-item" onclick="nav('metricas')"    id="nav-metricas">&#x1F4C8; Metricas Completas</div>
+      <div class="sb-item" onclick="nav('diagnostico')" id="nav-diagnostico">&#x1F9EA; Residuos</div>
+      <div class="sb-item" onclick="nav('conclusiones')" id="nav-conclusiones">&#x1F4DD; Conclusiones</div>
+    </div>
+
+    <!-- ── Contenido principal ──────────────────────────────────── -->
+    <div class="content">
+
+      <!-- ── PANEL: Vision General ─────────────────────────────── -->
+      <div class="panel active" id="panel-overview">
+        <div class="row r4" id="ov-kpis"></div>
+        <!-- Analisis de influencia de gaps (se muestra/oculta dinamicamente) -->
+        <div class="card-warn ib" id="ov-gaps-analysis" style="display:none"></div>
+        <div class="row r2">
+          <div class="card">
+            <div class="ct">RMSE global por variable y tecnica
+              <span class="bdg bdg-ok">todos los gaps</span>
+            </div>
+            <div class="cw h240"><canvas id="ov-rmse"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="ct">Error relativo % (RMSE/rango&#215;100)
+              <span class="bdg bdg-ok">compara entre variables</span>
+            </div>
+            <div class="cw h240"><canvas id="ov-errpct"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ct">Serie completa del dataset
+            <span class="bdg bdg-warn" id="ov-serie-title">—</span>
+          </div>
+          <div class="ctrls">
+            <select id="ov-var-sel" onchange="renderOvSerie()"></select>
+          </div>
+          <div class="cw h240"><canvas id="ov-serie"></canvas></div>
+        </div>
+        <div class="row" id="ov-gap-summary"
+             style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))"></div>
+      </div>
+
+      <!-- ── PANEL: Variables Detalle ──────────────────────────── -->
+      <div class="panel" id="panel-variables">
+        <div class="ib">
+          Analisis detallado por variable de sensor. Selecciona la variable y el gap
+          para ver las series imputadas, metricas individuales y comparativa de tecnicas.
+        </div>
+        <div class="ctrls">
+          <label style="font-size:11px;color:var(--tx3)">Variable:</label>
+          <select id="vd-var-sel" onchange="renderVarDetail()"></select>
+          <label style="font-size:11px;color:var(--tx3);margin-left:8px">Gap:</label>
+          <select id="vd-gap-sel" onchange="renderVarDetail()"></select>
+        </div>
+        <div class="card">
+          <div class="ct" id="vd-serie-title">Serie imputada vs real</div>
+          <div class="ctrls">
+            <button class="mbtn am"   data-m="Media"     onclick="toggleVDMethod(this)">Media</button>
+            <button class="mbtn amed" data-m="Mediana"   onclick="toggleVDMethod(this)">Mediana</button>
+            <button class="mbtn al"   data-m="Lineal"    onclick="toggleVDMethod(this)">Lineal</button>
+            <button class="mbtn as"   data-m="Sint. STL" onclick="toggleVDMethod(this)">Sint. STL</button>
+          </div>
+          <div class="leg-row">
+            <span class="leg"><span class="ln2" style="background:#111111"></span>Real</span>
+            <span class="leg"><span class="ln2" style="background:#8a7f75;border-top:1px dashed #8a7f75;height:0"></span>Real en gap</span>
+            <span class="leg"><span class="sq" style="background:var(--m)"></span>Media</span>
+            <span class="leg"><span class="sq" style="background:var(--med)"></span>Mediana</span>
+            <span class="leg"><span class="sq" style="background:var(--l)"></span>Lineal</span>
+            <span class="leg"><span class="sq" style="background:var(--s)"></span>Sint. STL
+              <em style="font-size:10px;color:var(--tx4)">(&#215;100 visual)</em></span>
+          </div>
+          <div class="cw h280"><canvas id="vd-serie"></canvas></div>
+        </div>
+        <div class="row r2">
+          <div class="card">
+            <div class="ct" id="vd-bar-title">RMSE por tecnica</div>
+            <div class="cw h200"><canvas id="vd-bar"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="ct">Metricas detalladas</div>
+            <table class="mtab" id="vd-table">
+              <thead><tr>
+                <th>Tecnica</th><th>RMSE</th><th>MAE</th><th>MAPE%</th>
+                <th>R&#178;</th><th>Sesgo</th><th title="Pearson. Media/Mediana tienen corr=0 por ser constantes">Corr. i</th><th>Err%</th>
+              </tr></thead>
+              <tbody id="vd-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PANEL: Gaps (generados dinamicamente por JS) ──────── -->
+      <div id="gap-panels-container"></div>
+
+      <!-- ── PANEL: Metricas Completas ─────────────────────────── -->
+      <div class="panel" id="panel-metricas">
+        <div class="ib">
+          <strong>Criterio de Seleccion &#8212; 3 Tecnicas + Sint. STL:</strong>
+          Se comparan Media global, Mediana global, Interpolacion Lineal y Serie Sintetica STL.
+          El RMSE penaliza errores grandes al cuadrarlos. Complementado con MAE, R&#178;, Sesgo
+          y Correlacion para determinar la tecnica mas efectiva por variable y gap.
+        </div>
+        <!-- Nota Sint. STL (rellenada por addSintNote() en JS) -->
+        <div class="ib wb" id="sint-note" style="display:none"></div>
+        <div class="row r2">
+          <div class="card">
+            <div class="ct">Analisis Grafico por Metrica
+              <span class="bdg bdg-ok">Selecciona variable y metrica</span>
+            </div>
+            <div class="ctrls">
+              <select id="m-var-sel" onchange="renderMetChart()"></select>
+              <select id="m-met-sel" onchange="renderMetChart()">
+                <option value="rmse">RMSE</option>
+                <option value="mae">MAE</option>
+                <option value="mape">MAPE %</option>
+                <option value="r2">R&#178;</option>
+                <option value="err_pct">Error relativo %</option>
+                <option value="bias">Sesgo (bias)</option>
+                <option value="corr">Correlacion</option>
+              </select>
+            </div>
+            <div class="cw h240"><canvas id="m-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="ct">Que indica cada metrica</div>
+            <table class="mtab">
+              <thead><tr><th>Metrica</th><th>Para que sirve</th><th>Ideal</th></tr></thead>
+              <tbody>
+                <tr><td style="color:var(--l);font-weight:600">RMSE</td><td>Penaliza errores grandes &#8212; sensible a picos</td><td>&#8594; 0</td></tr>
+                <tr><td style="color:var(--s);font-weight:600">MAE</td><td>Error promedio sin amplificar outliers</td><td>&#8594; 0</td></tr>
+                <tr><td style="color:var(--med);font-weight:600">MAPE%</td><td>Error relativo al valor real</td><td>&#8594; 0%</td></tr>
+                <tr><td style="color:#a78bfa;font-weight:600">R&#178;</td><td>Captura variacion real (&gt;0 mejor que media)</td><td>&#8594; 1</td></tr>
+                <tr><td style="color:var(--m);font-weight:600">Sesgo</td><td>Direccion del error &#8212; sobre/subestima</td><td>&#8594; 0</td></tr>
+                <tr><td style="color:#79c0ff;font-weight:600">Corr.</td><td>Sigue el patron temporal de la senal</td><td>&#8594; 1</td></tr>
+                <tr><td style="color:var(--tx3);font-weight:600">Err%</td><td>RMSE/rango&#215;100 &#8212; contexto relativo</td><td>&lt;5%</td></tr>
+              </tbody>
+            </table>
+            <!-- Caja de ayuda contextual (rellenada por renderMetricHelp() en JS) -->
+            <div id="metric-help-box" class="ib" style="margin-top:14px;font-size:12px"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ct">Funciones y metodos aplicados en el codigo</div>
+          <table class="mtab">
+            <thead><tr><th>Metrica / Funcion</th><th>Operacion en Python</th><th>Objetivo</th></tr></thead>
+            <tbody>
+              <tr><td style="color:var(--l);font-weight:600">RMSE</td>
+                  <td><code>np.sqrt(mean_squared_error(y_true, y_pred))</code></td>
+                  <td>Penaliza desviaciones mayores al cuadrado</td></tr>
+              <tr><td style="color:var(--s);font-weight:600">MAE</td>
+                  <td><code>mean_absolute_error(y_true, y_pred)</code></td>
+                  <td>Error lineal medio &#8212; robusto a outliers</td></tr>
+              <tr><td style="color:var(--med);font-weight:600">Interpolacion</td>
+                  <td><code>df.interpolate(method='time')</code></td>
+                  <td>Interpola usando el indice temporal</td></tr>
+              <tr><td style="color:#a78bfa;font-weight:600">STL</td>
+                  <td><code>STL(serie, period=288).fit()</code></td>
+                  <td>Descompone tendencia + estacionalidad</td></tr>
+              <tr><td style="color:var(--m);font-weight:600">Sesgo</td>
+                  <td><code>np.mean(y_pred - y_true)</code></td>
+                  <td>Error sistematico (sobre/subestimacion)</td></tr>
+              <tr><td style="color:#79c0ff;font-weight:600">R&#178;</td>
+                  <td><code>1 - SS_res / SS_tot</code></td>
+                  <td>Variacion capturada por la tecnica</td></tr>
+              <tr><td style="color:var(--tx3);font-weight:600">Correlacion</td>
+                  <td><code>np.corrcoef(y_true, y_pred)[0,1]</code></td>
+                  <td>Seguimiento del patron temporal</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── PANEL: Diagnostico Residuos ────────────────────────── -->
+      <div class="panel" id="panel-diagnostico">
+        <div class="ib">
+          <strong>Analisis de residuos:</strong> residuo = imputado &#8722; real.
+          Si los residuos tienen patron sistematico (siempre positivos = sobreestima,
+          siempre negativos = subestima), el metodo tiene sesgo. Una distribucion
+          simetrica centrada en 0 indica error aleatorio &#8212; estadisticamente ideal.
+        </div>
+        <div class="card">
+          <div class="ct">Residuos por lectura del gap
+            <span class="bdg bdg-ok">arriba de 0 = sobreestima &#183; abajo = subestima</span>
+          </div>
+          <div class="ctrls">
+            <select id="dr-gap-sel" onchange="renderDiagResi()"></select>
+            <select id="dr-var-sel" onchange="renderDiagResi()"></select>
+            <button class="mbtn am"   data-m="Media"     onclick="toggleDRMethod(this)">Media</button>
+            <button class="mbtn amed" data-m="Mediana"   onclick="toggleDRMethod(this)">Mediana</button>
+            <button class="mbtn al"   data-m="Lineal"    onclick="toggleDRMethod(this)">Lineal</button>
+            <button class="mbtn as"   data-m="Sint. STL" onclick="toggleDRMethod(this)">Sint. STL</button>
+          </div>
+          <div class="cw h280"><canvas id="dr-resi"></canvas></div>
+        </div>
+        <div class="row r3">
+          <div class="card">
+            <div class="ct">Histograma de residuos
+              <span class="bdg bdg-ok">campana en 0 = ideal</span>
+            </div>
+            <div class="ctrls">
+              <select id="dh-gap-sel" onchange="renderDiagHist()"></select>
+              <select id="dh-var-sel" onchange="renderDiagHist()"></select>
+              <select id="dh-met-sel" onchange="renderDiagHist()"></select>
+            </div>
+            <div class="cw h200"><canvas id="dh-chart"></canvas></div>
+            <div id="dh-interp" class="ib" style="margin-top:8px;font-size:10.5px"></div>
+          </div>
+          <div class="card">
+            <div class="ct">Sesgo vs Dispersion
+              <span class="bdg bdg-ok">sesgo = error sistematico</span>
+            </div>
+            <div class="ctrls">
+              <select id="db-gap-sel" onchange="renderDiagBias()"></select>
+              <select id="db-var-sel" onchange="renderDiagBias()"></select>
+            </div>
+            <div class="cw h200"><canvas id="db-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="ct">R&#178; por variable y gap
+              <span class="bdg bdg-ok">&gt;0 = mejor que media</span>
+            </div>
+            <div class="cw h200"><canvas id="dr2-chart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PANEL: Conclusiones ────────────────────────────────── -->
+      <div class="panel" id="panel-conclusiones">
+        <div id="conc-content"></div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /layout -->
+</div><!-- /app -->
+
+<script src="app.js"></script>
+</body>
+</html>
