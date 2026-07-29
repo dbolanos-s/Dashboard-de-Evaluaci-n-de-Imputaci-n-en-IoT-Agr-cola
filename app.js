@@ -28,7 +28,7 @@ const SINT_METRICAS = {
   var8:  {rmse:236.67, mae:172.17,mape:6.810, bias:0.00, std:236.67,r2:0.693, corr:0.871, err_pct:8.50}
 };
 
-const C = {'Media':'#ef4444','Mediana':'#f59e0b','Lineal':'#3b82f6','Sint. STL':'#10b981'};
+const C = {'Media':'#7c3aed','Mediana':'#db7716','Lineal':'#0369a1','Sint. STL':'#0f766e'};
 const METS = ['Media','Mediana','Lineal','Sint. STL'];
 
 // ════════════════════════════════════════════════
