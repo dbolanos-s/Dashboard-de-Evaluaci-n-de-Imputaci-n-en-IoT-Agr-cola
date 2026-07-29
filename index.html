@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -16,16 +16,13 @@
 <div id="upload-screen">
 
   <div class="lp-header">
-    <div class="lp-logo">&#x1F331;</div>
+    <span class="lp-logo">&#x1F331;</span>
     <div>
-      <div class="lp-title">Dashboard &#8212; Evaluacion de Imputacion IoT</div>
-      <div class="lp-subtitle">Agricultura de Precision &#183; Analisis de tecnicas de imputacion de datos faltantes</div>
+      <div class="lp-title">Evaluacion de Tecnicas de Imputacion</div>
+      <div class="lp-subtitle">Agricultura de Precision &#183; Nodo 1 &#183; IoT</div>
     </div>
-    <button class="lp-load-btn" onclick="document.getElementById('file-input').click()">
-      &#x1F4C2; Cargar JSON
-    </button>
-    <input type="file" id="file-input" accept=".json">
   </div>
+  <input type="file" id="file-input" accept=".json">
 
   <div class="lp-body">
 
@@ -109,10 +106,12 @@
         <div class="lp-ds-item"><span class="lp-ds-label">Variables</span><span class="lp-ds-val">Humedad &#183; Temp. Suelo &#183; Temp. Amb. &#183; Conductividad</span></div>
       </div>
 
-      <div class="lp-drop-mini" id="drop-zone" onclick="document.getElementById('file-input').click()">
-        &#x1F4C4; Arrastre aqui su <strong>dashboard_data.json</strong> o haga clic para seleccionar
+      <div class="lp-drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <div class="lp-dz-icon">&#x1F4C2;</div>
+        <div class="lp-dz-title">Cargar <strong>dashboard_data.json</strong></div>
+        <div class="lp-dz-sub">Haga clic aqui o arrastre el archivo</div>
       </div>
-      <div class="file-ok" id="file-ok">&#x2705; Archivo cargado correctamente. Procesando...</div>
+      <div class="file-ok" id="file-ok">&#x2705; Archivo cargado. Procesando...</div>
     </div>
 
   </div>
